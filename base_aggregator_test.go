@@ -1,4 +1,4 @@
-package ctx_aggregator
+package aggregator
 
 import (
 	"context"

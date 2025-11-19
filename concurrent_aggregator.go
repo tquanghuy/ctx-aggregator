@@ -1,4 +1,4 @@
-package ctx_aggregator
+package aggregator
 
 import (
 	"context"
@@ -71,12 +71,12 @@ type IConcurrentAggregator interface {
 // 	return ctx, func() { agg.Done() }
 // }
 
-// func (a *concurrentAggregator[T]) Collect(data T) {
-// 	a.m.Lock()
-// 	defer a.m.Unlock()
+func (a *concurrentAggregator[T]) Collect(data T) {
+	a.m.Lock()
+	defer a.m.Unlock()
 
-// 	a.datas = append(a.datas, data)
-// }
+	a.datas = append(a.datas, data)
+}
 
 func (a *concurrentAggregator[T]) Aggregate() []T {
 	// Always call Wait before lock mutex for not cause deadlock
