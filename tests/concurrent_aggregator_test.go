@@ -1,4 +1,4 @@
-package aggregator
+package aggregator_test
 
 import (
 	"context"
@@ -6,37 +6,38 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	aggregator "github.com/t-quanghuy/ctx-aggregator"
 )
 
 func TestConcurrentContextAggregator_CollectNotFoundAggregator(t *testing.T) {
 	err := funcBaseCollecInt32(context.Background())
-	assert.Equal(t, err, ErrNotFoundAggregator)
+	assert.Equal(t, err, aggregator.ErrNotFoundAggregator)
 }
 
 func TestConcurrentContextAggregator_CollectInvalidType(t *testing.T) {
-	ctx := RegisterConcurrentContextAggregator[int](context.Background())
+	ctx := aggregator.RegisterConcurrentContextAggregator[int](context.Background())
 	err := funcBaseCollecInt32(ctx)
-	assert.Equal(t, err, ErrInvalidType)
+	assert.Equal(t, err, aggregator.ErrInvalidType)
 }
 
 func TestConcurrentContextAggregator_AggregateNotFoundAggregator(t *testing.T) {
-	result, err := Aggregate[int](context.Background())
+	result, err := aggregator.Aggregate[int](context.Background())
 	assert.Nil(t, result)
-	assert.Equal(t, err, ErrNotFoundAggregator)
+	assert.Equal(t, err, aggregator.ErrNotFoundAggregator)
 }
 
 func TestConcurrentContextAggregator_AggregateInvalidType(t *testing.T) {
-	ctx := RegisterConcurrentContextAggregator[int32](context.Background())
+	ctx := aggregator.RegisterConcurrentContextAggregator[int32](context.Background())
 	err := funcBaseCollecInt32(ctx)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int](ctx)
+	result, err := aggregator.Aggregate[int](ctx)
 	assert.Nil(t, result)
-	assert.Equal(t, err, ErrInvalidType)
+	assert.Equal(t, err, aggregator.ErrInvalidType)
 }
 
 func TestConcurrentContextAggregator_SuccessNoKey(t *testing.T) {
-	ctx := RegisterConcurrentContextAggregator[int32](context.Background())
+	ctx := aggregator.RegisterConcurrentContextAggregator[int32](context.Background())
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx)
@@ -46,14 +47,14 @@ func TestConcurrentContextAggregator_SuccessNoKey(t *testing.T) {
 	err = funcBaseCollecInt32(ctx)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int32](ctx)
+	result, err := aggregator.Aggregate[int32](ctx)
 	assert.Equal(t, result, []int32{0, 0})
 	assert.Nil(t, err)
 }
 
 func TestConcurrentContextAggregator_SuccessBuildKey(t *testing.T) {
 	key := "test"
-	ctx := RegisterConcurrentContextAggregator[int32](context.Background(), key)
+	ctx := aggregator.RegisterConcurrentContextAggregator[int32](context.Background(), key)
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx, key)
@@ -63,7 +64,7 @@ func TestConcurrentContextAggregator_SuccessBuildKey(t *testing.T) {
 	err = funcBaseCollecInt32(ctx, key)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int32](ctx, key)
+	result, err := aggregator.Aggregate[int32](ctx, key)
 	assert.Equal(t, result, []int32{0, 0})
 	assert.Nil(t, err)
 }
@@ -73,8 +74,8 @@ func TestConcurrentContextAggregator_SuccessMultipleAggregator(t *testing.T) {
 	key2 := "test2"
 	ctx := context.Background()
 
-	ctx = RegisterConcurrentContextAggregator[int32](ctx, key1)
-	ctx = RegisterConcurrentContextAggregator[string](ctx, key2)
+	ctx = aggregator.RegisterConcurrentContextAggregator[int32](ctx, key1)
+	ctx = aggregator.RegisterConcurrentContextAggregator[string](ctx, key2)
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx, key1)
@@ -92,11 +93,11 @@ func TestConcurrentContextAggregator_SuccessMultipleAggregator(t *testing.T) {
 	err = funcBaseCollecString(ctx, key2)
 	assert.Nil(t, err)
 
-	result1, err := Aggregate[int32](ctx, key1)
+	result1, err := aggregator.Aggregate[int32](ctx, key1)
 	assert.Equal(t, result1, []int32{0, 0})
 	assert.Nil(t, err)
 
-	result2, err := Aggregate[string](ctx, key2)
+	result2, err := aggregator.Aggregate[string](ctx, key2)
 	assert.Equal(t, result2, []string{"", ""})
 	assert.Nil(t, err)
 }
@@ -105,7 +106,7 @@ func TestConcurrentContextAggregator_SuccessConcurrent(t *testing.T) {
 	key := "test"
 	ctx := context.Background()
 
-	ctx = RegisterConcurrentContextAggregator[int32](ctx, key)
+	ctx = aggregator.RegisterConcurrentContextAggregator[int32](ctx, key)
 
 	var (
 		err1, err2, err3 error
@@ -137,7 +138,7 @@ func TestConcurrentContextAggregator_SuccessConcurrent(t *testing.T) {
 	assert.Nil(t, err2)
 	assert.Nil(t, err3)
 
-	result, err := Aggregate[int32](ctx, key)
+	result, err := aggregator.Aggregate[int32](ctx, key)
 	assert.ElementsMatch(t, result, []int32{1, 2, 3})
 	assert.Nil(t, err)
 }

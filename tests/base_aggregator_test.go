@@ -1,53 +1,54 @@
-package aggregator
+package aggregator_test
 
 import (
 	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	aggregator "github.com/t-quanghuy/ctx-aggregator"
 )
 
 func funcBaseCollecInt32(ctx context.Context, keys ...string) error {
-	return Collect(ctx, int32(0), keys...)
+	return aggregator.Collect(ctx, int32(0), keys...)
 }
 
 func funcBaseCollecInt32WithVal(ctx context.Context, val int32, keys ...string) error {
-	return Collect(ctx, val, keys...)
+	return aggregator.Collect(ctx, val, keys...)
 }
 
 func funcBaseCollecString(ctx context.Context, keys ...string) error {
-	return Collect(ctx, "", keys...)
+	return aggregator.Collect(ctx, "", keys...)
 }
 
 func TestBaseContextAggregator_CollectNotFoundAggregator(t *testing.T) {
 	err := funcBaseCollecInt32(context.Background())
-	assert.Equal(t, err, ErrNotFoundAggregator)
+	assert.Equal(t, err, aggregator.ErrNotFoundAggregator)
 }
 
 func TestBaseContextAggregator_CollectInvalidType(t *testing.T) {
-	ctx := RegisterBaseContextAggregator[int](context.Background())
+	ctx := aggregator.RegisterBaseContextAggregator[int](context.Background())
 	err := funcBaseCollecInt32(ctx)
-	assert.Equal(t, err, ErrInvalidType)
+	assert.Equal(t, err, aggregator.ErrInvalidType)
 }
 
 func TestBaseContextAggregator_AggregateNotFoundAggregator(t *testing.T) {
-	result, err := Aggregate[int](context.Background())
+	result, err := aggregator.Aggregate[int](context.Background())
 	assert.Nil(t, result)
-	assert.Equal(t, err, ErrNotFoundAggregator)
+	assert.Equal(t, err, aggregator.ErrNotFoundAggregator)
 }
 
 func TestBaseContextAggregator_AggregateInvalidType(t *testing.T) {
-	ctx := RegisterBaseContextAggregator[int32](context.Background())
+	ctx := aggregator.RegisterBaseContextAggregator[int32](context.Background())
 	err := funcBaseCollecInt32(ctx)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int](ctx)
+	result, err := aggregator.Aggregate[int](ctx)
 	assert.Nil(t, result)
-	assert.Equal(t, err, ErrInvalidType)
+	assert.Equal(t, err, aggregator.ErrInvalidType)
 }
 
 func TestBaseContextAggregator_SuccessNoKey(t *testing.T) {
-	ctx := RegisterBaseContextAggregator[int32](context.Background())
+	ctx := aggregator.RegisterBaseContextAggregator[int32](context.Background())
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx)
@@ -57,14 +58,14 @@ func TestBaseContextAggregator_SuccessNoKey(t *testing.T) {
 	err = funcBaseCollecInt32(ctx)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int32](ctx)
+	result, err := aggregator.Aggregate[int32](ctx)
 	assert.Equal(t, result, []int32{0, 0})
 	assert.Nil(t, err)
 }
 
 func TestBaseContextAggregator_SuccessBuildKey(t *testing.T) {
 	key := "test"
-	ctx := RegisterBaseContextAggregator[int32](context.Background(), key)
+	ctx := aggregator.RegisterBaseContextAggregator[int32](context.Background(), key)
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx, key)
@@ -74,7 +75,7 @@ func TestBaseContextAggregator_SuccessBuildKey(t *testing.T) {
 	err = funcBaseCollecInt32(ctx, key)
 	assert.Nil(t, err)
 
-	result, err := Aggregate[int32](ctx, key)
+	result, err := aggregator.Aggregate[int32](ctx, key)
 	assert.Equal(t, result, []int32{0, 0})
 	assert.Nil(t, err)
 }
@@ -84,8 +85,8 @@ func TestBaseContextAggregator_SuccessMultipleAggregator(t *testing.T) {
 	key2 := "test2"
 	ctx := context.Background()
 
-	ctx = RegisterBaseContextAggregator[int32](ctx, key1)
-	ctx = RegisterBaseContextAggregator[string](ctx, key2)
+	ctx = aggregator.RegisterBaseContextAggregator[int32](ctx, key1)
+	ctx = aggregator.RegisterBaseContextAggregator[string](ctx, key2)
 
 	// Collect first element
 	err := funcBaseCollecInt32(ctx, key1)
@@ -103,11 +104,11 @@ func TestBaseContextAggregator_SuccessMultipleAggregator(t *testing.T) {
 	err = funcBaseCollecString(ctx, key2)
 	assert.Nil(t, err)
 
-	result1, err := Aggregate[int32](ctx, key1)
+	result1, err := aggregator.Aggregate[int32](ctx, key1)
 	assert.Equal(t, result1, []int32{0, 0})
 	assert.Nil(t, err)
 
-	result2, err := Aggregate[string](ctx, key2)
+	result2, err := aggregator.Aggregate[string](ctx, key2)
 	assert.Equal(t, result2, []string{"", ""})
 	assert.Nil(t, err)
 }

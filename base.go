@@ -17,6 +17,17 @@ func RegisterBaseContextAggregator[T any](ctx context.Context, keys ...string) c
 	return context.WithValue(ctx, ctxKey, agg)
 }
 
+// RegisterBaseContextAggregatorWithCapacity register a baseAggregator pointer into context
+// with a capacity hint for pre-allocation. This can improve performance when the expected
+// number of items is known in advance, reducing memory allocations.
+func RegisterBaseContextAggregatorWithCapacity[T any](ctx context.Context, capacity int, keys ...string) context.Context {
+	agg := &baseAggregator[T]{
+		datas: make([]T, 0, capacity),
+	}
+	ctxKey := buildContextKey(keys...)
+	return context.WithValue(ctx, ctxKey, agg)
+}
+
 type baseAggregator[T any] struct {
 	datas []T
 }

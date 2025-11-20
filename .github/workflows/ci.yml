@@ -7,28 +7,85 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
-    name: Build and Test
+  test:
+    name: Test
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', '1.22' ]
-
+        go-version: ['1.21', '1.22', '1.23']
+    
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
 
     - name: Set up Go
-      uses: actions/setup-go@v4
+      uses: actions/setup-go@v5
       with:
         go-version: ${{ matrix.go-version }}
 
-    - name: Install dependencies
+    - name: Cache Go modules
+      uses: actions/cache@v4
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ matrix.go-version }}-
+
+    - name: Download dependencies
       run: go mod download
 
     - name: Run tests
-      run: go test -v -race ./...
+      run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
-    - name: Run linter
-      uses: golangci/golangci-lint-action@v3
+    - name: Upload coverage to Codecov
+      if: matrix.go-version == '1.23'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.out
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v4
       with:
         version: latest
+        args: --timeout=5m
+
+  examples:
+    name: Verify Examples
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+
+    - name: Build examples
+      run: |
+        cd examples/basic && go build -o /dev/null .
+        cd ../concurrent && go build -o /dev/null .
+        cd ../multiple && go build -o /dev/null .
+
+    - name: Run examples
+      run: |
+        cd examples/basic && go run main.go
+        cd ../concurrent && go run main.go
+        cd ../multiple && go run main.go
